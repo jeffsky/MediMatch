@@ -81,11 +81,18 @@ namespace MediMatchRMIT
         {
             services.AddApplicationInsightsTelemetry(Configuration);
 
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=medimatch.db"));
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=medimatch-v1.1.db"));
 
-            services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = true;
+                options.Password.RequiredLength = 6;
+            })
+           .AddEntityFrameworkStores<ApplicationDbContext>()
+           .AddDefaultTokenProviders();
 
             // Add application services.
             services.AddTransient<IEmailSender, EmailSender>();
@@ -93,16 +100,16 @@ namespace MediMatchRMIT
 
             services.AddMvc().AddRazorPagesOptions(options =>
             {
-                options.Conventions.AuthorizeFolder("/Account/Manage");
-                options.Conventions.AuthorizePage("/Account/Logout");
+                //options.Conventions.AuthorizeFolder("/Account/Manage");
+                //options.Conventions.AuthorizePage("/Account/Logout");
             });
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
                 options.ExpireTimeSpan = TimeSpan.FromDays(1);
                 options.AccessDeniedPath = "/Account/Forbidden/";
-                options.LoginPath = "/Account/LogIn";
-                options.LogoutPath = "/Account/LogOff";
+                //options.LoginPath = "/Account/LogIn";
+                //options.LogoutPath = "/Account/Logout";
             }).AddJwtBearer(o =>
             {
                 o.TokenValidationParameters = _tokenValidationParameters;
@@ -142,14 +149,14 @@ namespace MediMatchRMIT
                     }
                 });
                 // Set the comments path for the Swagger JSON and UI.
-                var xmlFile = $"{Assembly.GetEntryAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                c.IncludeXmlComments(xmlPath);
+                //var xmlFile = $"{Assembly.GetEntryAssembly().GetName().Name}.xml";
+                //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                //c.IncludeXmlComments(xmlPath);
             });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, SeedData dbSeed)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, SeedData dbSeed, ApplicationDbContext context)
         {
             if (env.IsDevelopment())
             {
@@ -186,7 +193,7 @@ namespace MediMatchRMIT
             });
             try
             {
-                // Requires using RazorPagesMovie.Models;
+                context.Database.Migrate();
                 dbSeed.Seed().Wait();
             }
             catch (Exception ex)

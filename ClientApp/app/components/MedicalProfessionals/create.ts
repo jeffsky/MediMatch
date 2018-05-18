@@ -1,60 +1,53 @@
-import { HttpClient, json } from 'aurelia-fetch-client';
 import { inject } from 'aurelia-framework';
 import { activationStrategy } from 'aurelia-router';
+import { Data } from '../data';
 
-@inject(HttpClient)
+@inject(Data)
 export class CreateMP {
-    http: HttpClient;
     private medicalProfessional: any;
     private medic: any;
     private facility: any;
-    private facilities: any[];
-    private services: any[];
+    private facilities: any;
+    private services: any;
     private medicalId: number;
     private token: string;
+    private data: Data;
 
-    constructor(http: HttpClient) {
-        this.http = http;
-        var token = sessionStorage.getItem('token');
-        this.token = token;
-        //let services: any[] = [{ id: 1, category: "General Practitioner" }, { id: 2, category: "Dentist" }];
-        let medic: any = { firstMidName: "Test", lastName: "TestL" };
-        //medic.services = services;
-        this.medicalProfessional = medic;
-        http.fetch('api/Facilities')
-            .then(result => result.json() as Promise<any[]>)
-            .then(data => {
-                this.facilities = data;
-            });
-        console.log("this facilities: ");
-        console.log(this.facilities);
-        http.fetch('api/Services')
-            .then(result => result.json() as Promise<any[]>)
-            .then(data => {
-                this.services = data;
-            });
+    constructor(data: Data) {
+        this.data = data;
+        this.resolveFacilities();
+        this.resolveServices();
     }
-
-    CreateMedicalProfessional() {
-        console.log("Sending the following Medical Professional to Server");
-        console.log(this.medicalProfessional);
-        this.http.fetch('api/MedicalProfessionals', {
-            method: 'post',
-            body: JSON.stringify(this.medicalProfessional),
-            headers: new Headers({
-                'Authorization': 'Bearer ' + this.token,
-                'Content-Type': 'application/json'
-            })
-        })
-            .then(response => {
-                // do whatever here
-                //delete this.medicalProfessional;
-                this.facility = null;
-                if (response.status == 401) {
-                    console.log("Unauthorized request");
-                }
-                console.log(response);
-            }).catch (error => console.log(error));
+    async resolveFacilities() {
+        try {
+            let data = await this.data.getFacilities();
+            this.facilities = data;
+            return data;
+        } catch(error) {
+            console.error(error);
+            return null;
+        }
+    }
+    async resolveServices() {
+        try {
+            let data = await this.data.getServices();
+            this.services = data;
+            return data;
+        } catch(error) {
+            console.error(error);
+            return null;
+        }
+    }
+    async CreateMedicalProfessional() {
+        try {
+            let result = await this.data.createMedicalProfessional(this.medicalProfessional);
+            this.medicalProfessional = null;
+            console.log(result);
+            return result;
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
     }
     attached() {
 

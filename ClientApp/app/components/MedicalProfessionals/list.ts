@@ -1,104 +1,55 @@
-import { HttpClient } from 'aurelia-fetch-client';
 import { inject } from 'aurelia-framework';
+import { Data } from '../data';
+import { Common } from '../common';
 
-@inject(HttpClient)
+@inject(Data, Common)
 export class ListMP {
-    public medicalProfessionals: medicalProfessional[];
+    private medicalProfessionals: any;
+    private services: any;
+    private data: Data;
+    private filters: any;
+    private common: any;
 
-    constructor(http: HttpClient) {
-        http.fetch('api/MedicalProfessionals')
-            .then(result => result.json() as Promise<medicalProfessional[]>)
-            .then(data => {
-                this.medicalProfessionals = data;
-                console.log("Succesfully received data from server");
-                console.log(data);
-            });
+    constructor(data: Data, common: Common) {
+        this.data = data;
+        this.common = common;
+        var medicalProfessionalPromise = this.resolveMedicalProfessionals();
+        var servicesPromise = this.resolveServices();
     }
-}
-
-interface medicalProfessional {
-    id: any;
-    firstMidName: string;
-    lastName: string;
-    services: any[];
-    hoursActive: any[];
-    notes: string;
-    email: string;
-    phoneNumber: string;
-    reviews: any[];
-    facility: {
-        id: any;
-        facilityName: string;
-        location: {
-            id: any;
-            postCode: string;
-            street: string;
-            streetNo: string;
-            suburb: string;
-            coordinates: {
-                id: any;
-                latitude: number;
-                longtitude: number;
-            };
-        };
-        locationId: any;
-        website: string;
-        phoneNo: string;
-        email: string;
-        medicalProfessionals: any[];
-        facilitySupport: any[];
-    };
-    facilityId: any;
-}
-interface service {
-    id: any;
-    category: string;
-}
-interface hoursActive {
-    id: any;
-    weekDays: string;
-    hours: string;
-}
-interface review {
-    id: any;
-    title: string;
-    rating: number;
-    comment: string;
-    time: Date;
-    userId: number;
-    medicalProfessionalId: any;
-    medicalProfessional: {
-        id: any;
-        firstMidName: string;
-        lastName: string;
-        services: any[];
-        hoursActive: any[];
-        notes: string;
-        email: string;
-        phoneNumber: string;
-        reviews: any[];
-        facility: {
-            id: any;
-            facilityName: string;
-            location: {
-                id: any;
-                postCode: string;
-                street: string;
-                streetNo: string;
-                suburb: string;
-                coordinates: {
-                    id: any;
-                    latitude: number;
-                    longtitude: number;
-                };
-            };
-            locationId: any;
-            website: string;
-            phoneNo: string;
-            email: string;
-            medicalProfessionals: any[];
-            facilitySupport: any[];
-        };
-        facilityId: any;
-    };
+    async resolveMedicalProfessionals() {
+        try {
+            let data = await this.data.getMedicalProfessionals();
+            this.medicalProfessionals = data;
+            console.log(this.medicalProfessionals);
+            this.common.notify("GET", "Resolved Medical Professionals", "success");
+            return data;
+        } catch (error) {
+            this.common.notify("GET", "Resolved Medical Professionals", "error");
+            console.error(error);
+            return null;
+        }
+    }
+    async resolveServices() {
+        try {
+            let data = await this.data.getServices();
+            this.services = data;
+            return data;
+        } catch(error) {
+            console.error(error);
+            return null;
+        }
+    }
+    async SearchMedicalProfessionals() {
+        try {
+            let data = await this.data.filterMedicalProfessionals(this.filters);
+            this.medicalProfessionals = data;
+            console.log(data);
+            this.common.notify("FILTER", "Medical Professionals", "success");
+            return data;
+        } catch (error) {
+            this.common.notify("FILTER", "Medical Professionals", "warning");
+            console.error(error);
+            return null;
+        }
+    }
 }
